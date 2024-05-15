@@ -1,7 +1,8 @@
-{ pkgs, authKeyFile, ... }: {
+{ pkgs, ... }: {
   services.tailscale = {
     enable = true;
     package = pkgs.tailscale;
+    extraUpFlags = [ "--ssh" ];
   };
 
   systemd.services.tailscale-autoconnect = {
@@ -23,7 +24,7 @@
       fi
 
       # otherwise authenticate with tailscale
-      ${tailscale}/bin/tailscale up --authkey file:${authKeyFile}
+      ${tailscale}/bin/tailscale up --authkey file:/var/ts_authkey
     '';
   };
 }

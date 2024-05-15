@@ -6,6 +6,7 @@ provider "registry.opentofu.org/hetznercloud/hcloud" {
   constraints = "~> 1.45"
   hashes = [
     "h1:KQbtq1sXF4deoc0DKgjyyJMdIuHfhfhAPkVV0DlTMRI=",
+    "h1:aqEPcSpaWhKqbMs7c7Pf5ot6Tye7ntRitWsuNGPRPfk=",
     "zh:0759f0c23d0e59baab3382320eef4eb314e0c5967b6ef67ff07135da07a97b34",
     "zh:0e9ca84c4059d6d7e2c9f13d3c2b1cd91f7d9a47bedcb4b80c7c77d536eff887",
     "zh:17a033ac4650a39ddacf3265a449edabaea528f81542c4e63e254272d5aac340",
