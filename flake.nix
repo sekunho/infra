@@ -1,9 +1,7 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
-    tacohiro.url = "git+ssh://git@github.com/sekunho/tacohiro";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
     tailscale.url = "github:sekunho/tailscale/update-hash";
-    attic.url = "github:zhaofengli/attic";
 
     disko = {
       url = "github:nix-community/disko";
@@ -11,12 +9,10 @@
     };
   };
 
-  outputs = { self, nixpkgs, tacohiro, tailscale, attic, disko }:
+  outputs = { self, nixpkgs, tailscale, disko }:
     let
       pkgsOverlay = system: final: prev: {
-        tacohiro = tacohiro.packages.${system}.tacohiro;
         tailscale = tailscale.packages.${system}.tailscale;
-        attic-server = attic.packages.${system}.attic-server;
       };
 
       system = "x86_64-linux";
@@ -40,6 +36,8 @@
         nix-serve = import ./modules/nix-serve.nix;
         hetzner = import ./modules/hetzner.nix;
         fail2ban = import ./modules/fail2ban.nix;
+        k3s-worker = import ./modules/k3s-worker.nix;
+        k3s-control = import ./modules/k3s-control.nix;
       };
 
       nixosConfigurations = {
@@ -78,6 +76,96 @@
             inherit pkgs;
             inherit publicKeys;
             authKeyFile = "/var/ts_authkey";
+          };
+        };
+
+        hoenn-control-1 = { name, node, pkgs, ... }: {
+          imports = [
+            self.nixosModules.nix
+            disko.nixosModules.disko
+            self.nixosModules.hetzner
+            self.nixosModules.k3s-control
+
+            ({ ... }: {
+              networking.hostName = "hoenn-control-1";
+            })
+          ];
+
+          deployment = {
+            tags = [ "hoenn" "hoenn-control" ];
+            targetHost = "hoenn-control-1.sekun.net";
+            targetUser = "operator";
+            targetPort = 22;
+
+            keys = {
+              "k3s_token" = {
+                keyFile = "/home/sekun/Projects/infra/secrets/hoenn/k3s_token";
+                destDir = "/etc/secrets";
+                user = "operator";
+                group = "users";
+                permissions = "0640";
+              };
+            };
+          };
+        };
+
+        hoenn-worker-1 = { name, node, pkgs, ... }: {
+          imports = [
+            self.nixosModules.nix
+            disko.nixosModules.disko
+            self.nixosModules.hetzner
+            self.nixosModules.k3s-worker
+
+            ({ ... }: {
+              networking.hostName = "hoenn-worker-1";
+            })
+          ];
+
+          deployment = {
+            tags = [ "hoenn" "hoenn-worker" ];
+            targetHost = "hoenn-worker-1.sekun.net";
+            targetUser = "operator";
+            targetPort = 22;
+
+            keys = {
+              "k3s_token" = {
+                keyFile = "/home/sekun/Projects/infra/secrets/hoenn/k3s_token";
+                destDir = "/etc/secrets";
+                user = "operator";
+                group = "users";
+                permissions = "0640";
+              };
+            };
+          };
+        };
+
+        hoenn-worker-2 = { name, node, pkgs, ... }: {
+          imports = [
+            self.nixosModules.nix
+            disko.nixosModules.disko
+            self.nixosModules.hetzner
+            self.nixosModules.k3s-worker
+
+            ({ ... }: {
+              networking.hostName = "hoenn-worker-2";
+            })
+          ];
+
+          deployment = {
+            tags = [ "hoenn" "hoenn-worker" ];
+            targetHost = "hoenn-worker-2.sekun.net";
+            targetUser = "operator";
+            targetPort = 22;
+
+            keys = {
+              "k3s_token" = {
+                keyFile = "/home/sekun/Projects/infra/secrets/hoenn/k3s_token";
+                destDir = "/etc/secrets";
+                user = "operator";
+                group = "users";
+                permissions = "0640";
+              };
+            };
           };
         };
 
@@ -123,11 +211,9 @@
               nil
               nixpkgs-fmt
               opentofu
+              kubectl
               just
               colmena
-              infisical
-              bws
-              jq
             ];
           };
         };
