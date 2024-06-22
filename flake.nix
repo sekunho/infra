@@ -109,8 +109,16 @@
 
             keys = {
               "k3s_token" = {
-                keyFile = "/home/sekun/Projects/infra/secrets/hoenn/k3s_token";
+                keyCommand = ["./bws-secret-get" "k3s-token"];
                 destDir = "/etc/secrets";
+                user = "operator";
+                group = "users";
+                permissions = "0640";
+              };
+
+              "registries.yaml" = {
+                keyCommand = ["./bws-secret-get" "k3s-registries"];
+                destDir = "/etc/rancher/k3s";
                 user = "operator";
                 group = "users";
                 permissions = "0640";
@@ -227,6 +235,8 @@
                 opentofu
                 kubectl
                 just
+                bws
+                jq
                 colmena
               ];
             };
@@ -250,6 +260,7 @@
                 opentofu
                 kubectl
                 just
+                bws
                 colmena
               ];
             };
