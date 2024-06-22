@@ -21,14 +21,14 @@
   security.sudo.wheelNeedsPassword = false;
 
   users.users = {
-    root.openssh.authorizedKeys.keys = [ publicKeys.default ];
+    root.openssh.authorizedKeys.keys = [ publicKeys.arceus publicKeys.blaziken ];
 
     operator = {
       isNormalUser = true;
       uid = 1000;
       home = "/home/operator";
       extraGroups = [ "wheel" "networkmanager" ];
-      openssh.authorizedKeys.keys = [ publicKeys.default ];
+      openssh.authorizedKeys.keys = [ publicKeys.arceus publicKeys.blaziken ];
     };
   };
 

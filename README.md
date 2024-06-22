@@ -1,6 +1,14 @@
 # infra
 
-## `cache`
+## Hosts
+
+### `hoenn`
+
+`hoenn` is a `k3s` cluster running on Hetzner Cloud.
+
+WIP
+
+## `cache` (deprecated)
 
 `cache` is a nix binary cache server that's meant to run internally within my
 tailnet.

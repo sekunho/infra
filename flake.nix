@@ -1,9 +1,7 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
-    tacohiro.url = "git+ssh://git@github.com/sekunho/tacohiro";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
     tailscale.url = "github:sekunho/tailscale/update-hash";
-    attic.url = "github:zhaofengli/attic";
 
     disko = {
       url = "github:nix-community/disko";
@@ -11,21 +9,29 @@
     };
   };
 
-  outputs = { self, nixpkgs, tacohiro, tailscale, attic, disko }:
+  outputs = { self, nixpkgs, tailscale, disko }:
     let
       pkgsOverlay = system: final: prev: {
-        tacohiro = tacohiro.packages.${system}.tacohiro;
         tailscale = tailscale.packages.${system}.tailscale;
-        attic-server = attic.packages.${system}.attic-server;
       };
 
-      system = "x86_64-linux";
-      overlays = [ (pkgsOverlay system) ];
-      pkgs = import nixpkgs { inherit system; inherit overlays; config.allowUnfree = true; };
+      mkPkgs = system:
+        let
+          overlays = [ (pkgsOverlay system) ];
+        in
+        import nixpkgs {
+          inherit system;
+          inherit overlays;
+          config.allowUnfree = true;
+        };
 
       publicKeys = {
-        default = ''
-          ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCUboqku5i0dRaOoTZab2aAtD6WWL5eCPhBQett0bVYYzWupKywA+f/HKy6TBk+syQ9mJ4tf9uBt1bsrpoYIlxzjpVj/iNU+jPxlQJl02Rmryq8dO0DaTh7gTpwZXx4MVUdbI4eV8CZ2tEBYIpPpuPjs8h7014RQJfImrXXo4DBEOTrYZ+GcPR1ITCJHMwMbv4MC+2Qvas67mEfvDAzhFqNR0srOplyRrzmFsNu2XBSjiZVsKjWsG90F21vf+yXfkFHfVILWCYxMumL+CC6rotlKlReMenuMgWhSGBxz2N2P6KifqgIHSMRfp+aVeTwIQTuUSuPFkO4PjNXkgEQvKakOOb/pSruO7fyMWowbVVONg+m+L+SCdrjC4ulxz5VOSdPtY0ZNS29QlwT6lSlCKcCQ4R0RtY+lWsLGUaPApxjqj4gVTEGDFFEx6NUQnhOZcNLDSKtAzIfxWjhLhsyTOVGxH0qTk9a0wbw/NA22eRx3iKLQ4qpF+tj5ow/6h2tywyTiDeXd9MPrOZazy+X8emwRUXvgW1gb6zMmM80/XDc7h/ojfiK5Wg2mkK/L9AksTJeV/EmX5XTNBY5Rl+anXMyh7MnYf9OEX4Ts3hBtdzJWCaQe793E6q14zmZgXP/N4Lj7YawtpFcHk5sw76KYG8tCy7ppexJVYtUA33HXULJnQ== devops@sekun.net
+        arceus = ''
+          ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILivh7MN4ZQilbj0jTbKCwoRb+Z/qUYUs6U7E4+61abJ sekun@arceus
+        '';
+
+        blaziken = ''
+          ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK9nZqRf4oi9qIQJTJ/yftfj6MzHl+K6i0vUXKnyk9tR sekun@blaziken
         '';
       };
     in
@@ -40,11 +46,13 @@
         nix-serve = import ./modules/nix-serve.nix;
         hetzner = import ./modules/hetzner.nix;
         fail2ban = import ./modules/fail2ban.nix;
+        k3s-worker = import ./modules/k3s-worker.nix;
+        k3s-control = import ./modules/k3s-control.nix;
       };
 
       nixosConfigurations = {
         init-hetzner = nixpkgs.lib.nixosSystem {
-          inherit system;
+          system = "x86_64-linux";
 
           modules = [
             self.nixosModules.nix
@@ -64,7 +72,7 @@
           ];
 
           specialArgs = {
-            inherit pkgs;
+            pkgs = mkPkgs "x86_64-linux";
             inherit publicKeys;
           };
         };
@@ -72,12 +80,110 @@
 
       colmena = {
         meta = {
-          nixpkgs = pkgs;
+          nixpkgs = mkPkgs "x86_64-linux";
 
           specialArgs = {
-            inherit pkgs;
             inherit publicKeys;
+            pkgs = mkPkgs "x86_64-linux";
             authKeyFile = "/var/ts_authkey";
+          };
+        };
+
+        hoenn-control-1 = { name, node, pkgs, ... }: {
+          imports = [
+            self.nixosModules.nix
+            disko.nixosModules.disko
+            self.nixosModules.hetzner
+            self.nixosModules.k3s-control
+
+            ({ ... }: {
+              networking.hostName = "hoenn-control-1";
+            })
+          ];
+
+          deployment = {
+            tags = [ "hoenn" "hoenn-control" ];
+            targetHost = "hoenn-control-1.sekun.net";
+            targetUser = "operator";
+            targetPort = 22;
+
+            keys = {
+              "k3s_token" = {
+                keyCommand = ["./bws-secret-get" "k3s-token"];
+                destDir = "/etc/secrets";
+                user = "operator";
+                group = "users";
+                permissions = "0640";
+              };
+
+              "registries.yaml" = {
+                keyCommand = ["./bws-secret-get" "k3s-registries"];
+                destDir = "/etc/rancher/k3s";
+                user = "operator";
+                group = "users";
+                permissions = "0640";
+              };
+            };
+          };
+        };
+
+        hoenn-worker-1 = { name, node, pkgs, ... }: {
+          imports = [
+            self.nixosModules.nix
+            disko.nixosModules.disko
+            self.nixosModules.hetzner
+            self.nixosModules.k3s-worker
+
+            ({ ... }: {
+              networking.hostName = "hoenn-worker-1";
+            })
+          ];
+
+          deployment = {
+            tags = [ "hoenn" "hoenn-worker" ];
+            targetHost = "hoenn-worker-1.sekun.net";
+            targetUser = "operator";
+            targetPort = 22;
+
+            keys = {
+              "k3s_token" = {
+                keyFile = "/home/sekun/Projects/infra/secrets/hoenn/k3s_token";
+                destDir = "/etc/secrets";
+                user = "operator";
+                group = "users";
+                permissions = "0640";
+              };
+            };
+          };
+        };
+
+        hoenn-worker-2 = { name, node, pkgs, ... }: {
+          imports = [
+            self.nixosModules.nix
+            disko.nixosModules.disko
+            self.nixosModules.hetzner
+            self.nixosModules.k3s-worker
+
+            ({ ... }: {
+              networking.hostName = "hoenn-worker-2";
+            })
+          ];
+
+          deployment = {
+            tags = [ "hoenn" "hoenn-worker" ];
+            targetHost = "hoenn-worker-2.sekun.net";
+            targetUser = "operator";
+            targetPort = 22;
+
+            keys = {
+              "k3s_token" = {
+                keyFile = "/home/sekun/Projects/infra/secrets/hoenn/k3s_token";
+                destDir = "/etc/secrets";
+                user = "operator";
+                group = "users";
+                permissions = "0640";
+              };
+            };
           };
         };
 
@@ -111,26 +217,54 @@
       };
 
       devShells = {
-        x86_64-linux = {
-          default = pkgs.mkShell {
-            shellHook = ''
-              set -a
-              source env.sh
-              set +a
-            '';
+        aarch64-darwin =
+          let
+            pkgs = mkPkgs "aarch64-darwin";
+          in
+          {
+            default = pkgs.mkShell {
+              shellHook = ''
+                set -a
+                source env.sh
+                set +a
+              '';
 
-            buildInputs = with pkgs; [
-              nil
-              nixpkgs-fmt
-              opentofu
-              just
-              colmena
-              infisical
-              bws
-              jq
-            ];
+              buildInputs = with pkgs; [
+                nil
+                nixpkgs-fmt
+                opentofu
+                kubectl
+                just
+                bws
+                jq
+                colmena
+              ];
+            };
           };
-        };
+
+        x86_64-linux =
+          let
+            pkgs = mkPkgs "x86_64-linux";
+          in
+          {
+            default = pkgs.mkShell {
+              shellHook = ''
+                set -a
+                source env.sh
+                set +a
+              '';
+
+              buildInputs = with pkgs; [
+                nil
+                nixpkgs-fmt
+                opentofu
+                kubectl
+                just
+                bws
+                colmena
+              ];
+            };
+          };
       };
     }
   ;
