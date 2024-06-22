@@ -15,12 +15,18 @@
         tailscale = tailscale.packages.${system}.tailscale;
       };
 
-      system = "x86_64-linux";
-      overlays = [ (pkgsOverlay system) ];
-      pkgs = import nixpkgs { inherit system; inherit overlays; config.allowUnfree = true; };
+      mkPkgs = system:
+        let
+          overlays = [ (pkgsOverlay system) ];
+        in
+        import nixpkgs {
+          inherit system;
+          inherit overlays;
+          config.allowUnfree = true;
+        };
 
       publicKeys = {
-        default = ''
+        arceus = ''
           ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCUboqku5i0dRaOoTZab2aAtD6WWL5eCPhBQett0bVYYzWupKywA+f/HKy6TBk+syQ9mJ4tf9uBt1bsrpoYIlxzjpVj/iNU+jPxlQJl02Rmryq8dO0DaTh7gTpwZXx4MVUdbI4eV8CZ2tEBYIpPpuPjs8h7014RQJfImrXXo4DBEOTrYZ+GcPR1ITCJHMwMbv4MC+2Qvas67mEfvDAzhFqNR0srOplyRrzmFsNu2XBSjiZVsKjWsG90F21vf+yXfkFHfVILWCYxMumL+CC6rotlKlReMenuMgWhSGBxz2N2P6KifqgIHSMRfp+aVeTwIQTuUSuPFkO4PjNXkgEQvKakOOb/pSruO7fyMWowbVVONg+m+L+SCdrjC4ulxz5VOSdPtY0ZNS29QlwT6lSlCKcCQ4R0RtY+lWsLGUaPApxjqj4gVTEGDFFEx6NUQnhOZcNLDSKtAzIfxWjhLhsyTOVGxH0qTk9a0wbw/NA22eRx3iKLQ4qpF+tj5ow/6h2tywyTiDeXd9MPrOZazy+X8emwRUXvgW1gb6zMmM80/XDc7h/ojfiK5Wg2mkK/L9AksTJeV/EmX5XTNBY5Rl+anXMyh7MnYf9OEX4Ts3hBtdzJWCaQe793E6q14zmZgXP/N4Lj7YawtpFcHk5sw76KYG8tCy7ppexJVYtUA33HXULJnQ== devops@sekun.net
         '';
       };
@@ -42,7 +48,7 @@
 
       nixosConfigurations = {
         init-hetzner = nixpkgs.lib.nixosSystem {
-          inherit system;
+          system = "x86_64-linux";
 
           modules = [
             self.nixosModules.nix
@@ -62,7 +68,7 @@
           ];
 
           specialArgs = {
-            inherit pkgs;
+            pkgs = mkPkgs "x86_64-linux";
             inherit publicKeys;
           };
         };
@@ -70,11 +76,11 @@
 
       colmena = {
         meta = {
-          nixpkgs = pkgs;
+          nixpkgs = mkPkgs "x86_64-linux";
 
           specialArgs = {
-            inherit pkgs;
             inherit publicKeys;
+            pkgs = mkPkgs "x86_64-linux";
             authKeyFile = "/var/ts_authkey";
           };
         };
@@ -199,24 +205,51 @@
       };
 
       devShells = {
-        x86_64-linux = {
-          default = pkgs.mkShell {
-            shellHook = ''
-              set -a
-              source env.sh
-              set +a
-            '';
+        aarch64-darwin =
+          let
+            pkgs = mkPkgs "aarch64-darwin";
+          in
+          {
+            default = pkgs.mkShell {
+              shellHook = ''
+                set -a
+                source env.sh
+                set +a
+              '';
 
-            buildInputs = with pkgs; [
-              nil
-              nixpkgs-fmt
-              opentofu
-              kubectl
-              just
-              colmena
-            ];
+              buildInputs = with pkgs; [
+                nil
+                nixpkgs-fmt
+                opentofu
+                kubectl
+                just
+                colmena
+              ];
+            };
           };
-        };
+
+        x86_64-linux =
+          let
+            pkgs = mkPkgs "x86_64-linux";
+          in
+          {
+            default = pkgs.mkShell {
+              shellHook = ''
+                set -a
+                source env.sh
+                set +a
+              '';
+
+              buildInputs = with pkgs; [
+                nil
+                nixpkgs-fmt
+                opentofu
+                kubectl
+                just
+                colmena
+              ];
+            };
+          };
       };
     }
   ;
