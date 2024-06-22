@@ -21,7 +21,7 @@
   security.sudo.wheelNeedsPassword = false;
 
   users.users = {
-    root.openssh.authorizedKeys.keys = [ publicKeys.default ];
+    root.openssh.authorizedKeys.keys = [ publicKeys.default publicKeys.blaziken ];
 
     operator = {
       isNormalUser = true;
