@@ -1,6 +1,6 @@
 { self, disko }: { name, node, pkgs, ... }: {
   imports = [
-    self.nixosModules.nix
+    (self.nixosModules.nix { trusted-users = [ "root" "operator" ]; })
     disko.nixosModules.disko
     self.nixosModules.hetzner
     self.nixosModules.tailscale

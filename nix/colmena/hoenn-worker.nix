@@ -1,6 +1,6 @@
 { self, disko, hostName }: { name, node, pkgs, ... }: {
   imports = [
-    self.nixosModules.nix
+    (self.nixosModules.nix { trusted-users = [ "root" "operator" ]; })
     disko.nixosModules.disko
     (self.nixosModules.hetzner { inherit hostName; })
     self.nixosModules.k3s-worker

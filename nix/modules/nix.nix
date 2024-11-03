@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ trusted-users, pkgs, ... }: {
   nix = {
     package = pkgs.nix;
     optimise.automatic = true;
@@ -8,7 +8,7 @@
     '';
 
     settings = {
-      trusted-users = [ "root" "operator" ];
+      inherit trusted-users;
 
       trusted-public-keys = [
         "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
