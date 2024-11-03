@@ -1,6 +1,6 @@
 { pkgs, ... }: {
   nix = {
-    package = pkgs.nixVersions.nix_2_19;
+    package = pkgs.nix;
     optimise.automatic = true;
 
     extraOptions = ''

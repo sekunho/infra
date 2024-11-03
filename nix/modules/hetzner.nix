@@ -1,4 +1,4 @@
-{ modulesPath, publicKeys, ... }: {
+{ modulesPath, publicKeys, hostName, ... }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     (modulesPath + "/profiles/qemu-guest.nix")
@@ -19,6 +19,7 @@
   };
 
   security.sudo.wheelNeedsPassword = false;
+  networking = { inherit hostName; };
 
   users.users = {
     root.openssh.authorizedKeys.keys = [ publicKeys.arceus publicKeys.blaziken ];
@@ -31,6 +32,4 @@
       openssh.authorizedKeys.keys = [ publicKeys.arceus publicKeys.blaziken ];
     };
   };
-
-  system.stateVersion = "23.11";
 }
