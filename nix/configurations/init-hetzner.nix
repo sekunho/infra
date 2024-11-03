@@ -1,5 +1,17 @@
-{ self, disko, nixosSystem, mkPkgs, publicKeys }: nixosSystem {
+{ self
+, disko
+, nixosSystem
+, mkPkgs
+, publicKeys
+, hostName
+, stateVersion
+}:
+let
   system = "x86_64-linux";
+  pkgs = mkPkgs system;
+in
+nixosSystem {
+  inherit system;
 
   modules = [
     self.nixosModules.nix
@@ -7,6 +19,10 @@
     self.nixosModules.hetzner
 
     ({ ... }: {
+      system = {
+        inherit stateVersion;
+      };
+
       networking = {
         firewall = {
           enable = true;
@@ -15,11 +31,12 @@
           allowedTCPPorts = [ 22 ];
         };
       };
+
     })
   ];
 
   specialArgs = {
-    pkgs = mkPkgs "x86_64-linux";
-    inherit publicKeys;
+    inherit publicKeys hostName pkgs;
+    trusted-users = [ "root" "operator" ];
   };
 }

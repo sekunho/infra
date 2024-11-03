@@ -12,6 +12,7 @@
   outputs = { self, nixpkgs, flake-parts, disko }@inputs:
     let
       pkgsOverlay = system: final: prev: { };
+      stateVersion = "24.05";
 
       mkPkgs = system:
         let
@@ -39,21 +40,22 @@
 
         flake = {
           nixosModules = {
-            nix = import ./modules/nix.nix;
-            tailscale = import ./modules/tailscale.nix;
-            cache-nginx = import ./modules/cache-nginx.nix;
+            nix = import ./nix/modules/nix.nix;
+            tailscale = import ./nix/modules/tailscale.nix;
+            cache-nginx = import ./nix/modules/cache-nginx.nix;
             cache = import ./hosts/cache/configuration.nix;
-            nix-serve = import ./modules/nix-serve.nix;
-            hetzner = import ./modules/hetzner.nix;
-            fail2ban = import ./modules/fail2ban.nix;
-            k3s-worker = import ./modules/k3s-worker.nix;
-            k3s-control = import ./modules/k3s-control.nix;
+            nix-serve = import ./nix/modules/nix-serve.nix;
+            hetzner = import ./nix/modules/hetzner.nix;
+            fail2ban = import ./nix/modules/fail2ban.nix;
+            k3s-worker = import ./nix/modules/k3s-worker.nix;
+            k3s-control = import ./nix/modules/k3s-control.nix;
           };
 
           nixosConfigurations = {
-            init-hetzner = import ./nix/configurations/init-hetzner.nix {
+            init-cache = import ./nix/configurations/init-hetzner.nix {
               inherit (nixpkgs.lib) nixosSystem;
-              inherit self disko;
+              inherit self disko mkPkgs publicKeys stateVersion;
+              hostName = "cache";
             };
           };
 
