@@ -5,6 +5,7 @@
 , publicKeys
 , hostName
 , stateVersion
+, trusted-users ? [ "root" ]
 }:
 let
   system = "x86_64-linux";
@@ -36,7 +37,6 @@ nixosSystem {
   ];
 
   specialArgs = {
-    inherit publicKeys hostName pkgs;
-    trusted-users = [ "root" "operator" ];
+    inherit publicKeys hostName pkgs trusted-users;
   };
 }

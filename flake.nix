@@ -52,11 +52,15 @@
           };
 
           nixosConfigurations = {
-            init-cache = import ./nix/configurations/init-hetzner.nix {
+            init-cache = self.bruh.mkHetzner {
               inherit (nixpkgs.lib) nixosSystem;
               inherit self disko mkPkgs publicKeys stateVersion;
               hostName = "cache";
             };
+          };
+
+          lib = {
+            mkHetzner = import ./nix/packages/mk-hetzner.nix;
           };
 
           colmena = {
