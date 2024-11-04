@@ -60,6 +60,7 @@
           };
 
           lib = {
+            inherit publicKeys;
             mkHetzner = import ./nix/packages/mk-hetzner.nix;
           };
 
